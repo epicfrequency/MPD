@@ -26,17 +26,19 @@
 #include "dvda_filesystem.h"
 #include "dvda_zone.h"
 
+#include <memory>
+
 class dvda_disc_t : public dvda_reader_t {
 private:
-	dvda_media_t*      dvda_media;
-	dvda_filesystem_t* dvda_filesystem;
-	dvda_zone_t*       dvda_zone;
-	track_list_t       track_list;
+	dvda_media_t*                      dvda_media;
+	std::unique_ptr<dvda_filesystem_t> dvda_filesystem;
+	std::unique_ptr<dvda_zone_t>       dvda_zone;
+	track_list_t                       track_list;
 
-	stream_buffer_t<uint8_t, int> track_stream;
-	std::vector<uint8_t>          ps1_data;
-	audio_stream_t*               audio_stream;
-	audio_track_t                 audio_track;
+	stream_buffer_t<uint8_t, int>   track_stream;
+	std::vector<uint8_t>            ps1_data;
+	std::unique_ptr<audio_stream_t> audio_stream;
+	audio_track_t                   audio_track;
 
 	uint64_t      stream_size;
 	double        stream_duration;
