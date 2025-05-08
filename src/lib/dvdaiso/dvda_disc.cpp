@@ -207,8 +207,8 @@ bool dvda_disc_t::open(dvda_media_t* _dvda_media) {
 
 bool dvda_disc_t::close() {
 	track_list.clear();
-	dvda_zone->close();
 	if (dvda_zone) {
+		dvda_zone->close();
 		delete dvda_zone;
 		dvda_zone = nullptr;
 	}
