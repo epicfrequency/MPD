@@ -32,22 +32,16 @@ static constexpr Domain dvdaiso_domain("dvdaiso");
 
 dvda_disc_t::dvda_disc_t() {
 	dvda_media = nullptr;
-	dvda_filesystem = nullptr;
-	dvda_zone = nullptr;
-	audio_stream = nullptr;
 	stream_downmix = false;
 	sel_track_index = -1;
 }
 
 dvda_disc_t::~dvda_disc_t() {
 	close();
-	if (audio_stream) {
-		delete audio_stream;
-	}
 }
 
 dvda_filesystem_t* dvda_disc_t::get_filesystem() {
-	return dvda_filesystem;
+	return dvda_filesystem.get();
 }
 
 audio_track_t dvda_disc_t::get_track(uint32_t track_index) {
@@ -184,14 +178,14 @@ bool dvda_disc_t::open(dvda_media_t* _dvda_media) {
 		return false;
 	}
 	dvda_media = _dvda_media;
-	dvda_filesystem = new dvda_filesystem_t;
+	dvda_filesystem = std::make_unique<dvda_filesystem_t>();
 	if (!dvda_filesystem) {
 		return false;
 	}
 	if (!dvda_filesystem->mount(dvda_media)) {
 		return false;
 	}
-	dvda_zone = new dvda_zone_t(*dvda_filesystem);
+	dvda_zone = std::make_unique<dvda_zone_t>(*dvda_filesystem);
 	if (!dvda_zone) {
 		return false;
 	}
@@ -209,13 +203,9 @@ bool dvda_disc_t::close() {
 	track_list.clear();
 	if (dvda_zone) {
 		dvda_zone->close();
-		delete dvda_zone;
-		dvda_zone = nullptr;
 	}
-	if (dvda_filesystem) {
-		delete dvda_filesystem;
-		dvda_filesystem = nullptr;
-	}
+	dvda_zone.reset();
+	dvda_filesystem.reset();
 	dvda_media = nullptr;
 	sel_track_index = -1;
 	return true;
@@ -264,20 +254,14 @@ bool dvda_disc_t::read_frame(uint8_t* frame_data, size_t* frame_size) {
 		}
 		bool decoder_needs_reinit = (bytes_decoded == audio_stream_t::RETCODE_REINIT);
 		if (decoder_needs_reinit) {
-			if (audio_stream) {
-				delete audio_stream;
-				audio_stream = nullptr;
-			}
+			audio_stream.reset();
 			LogFmt(LogLevel::WARNING, dvdaiso_domain, "Reinitializing DVD-Audio Decoder: MLP/TrueHD");
 			goto decode_run_read_stream_start;
 		}
 		if (track_stream.get_read_size() == 0) {
 			if (stream_needs_reinit) {
 				stream_needs_reinit = false;
-				if (audio_stream) {
-					delete audio_stream;
-					audio_stream = nullptr;
-				}
+				audio_stream.reset();
 				stream_ps1_info.header.stream_id = UNK_STREAM_ID;
 				LogFmt(LogLevel::WARNING, dvdaiso_domain, "Reinitializing DVD-Audio Decoder: PCM");
 				goto decode_run_read_stream_start;
@@ -336,10 +320,7 @@ bool dvda_disc_t::read_frame(uint8_t* frame_data, size_t* frame_size) {
 
 bool dvda_disc_t::seek(double seconds) {
 	track_stream.reinit();
-	if (audio_stream) {
-		delete audio_stream;
-		audio_stream = nullptr;
-	}
+	audio_stream.reset();
 	uint32_t offset = (uint32_t)((seconds / (audio_track.duration + 1.0)) * (double)(audio_track.block_last + 1 - audio_track.block_first));
 	if (offset > audio_track.block_last - audio_track.block_first - 1) {
 		offset = audio_track.block_last - audio_track.block_first - 1;
@@ -350,20 +331,17 @@ bool dvda_disc_t::seek(double seconds) {
 }
 
 bool dvda_disc_t::create_audio_stream(sub_header_t& p_ps1_info, uint8_t* p_buf, int p_buf_size, bool p_downmix) {
-	if (audio_stream) {
-		delete audio_stream;
-		audio_stream = nullptr;
-	}
+	audio_stream.reset();
 	int init_code = -1;
 	switch (stream_ps1_info.header.stream_id) {
 	case MLP_STREAM_ID:
-		audio_stream = new mlp_audio_stream_t;
+		audio_stream = std::make_unique<mlp_audio_stream_t>();
 		if (audio_stream) {
 			init_code = audio_stream->init(p_buf, p_buf_size, p_downmix);
 		}
 		break;
 	case PCM_STREAM_ID:
-		audio_stream = new pcm_audio_stream_t;
+		audio_stream = std::make_unique<pcm_audio_stream_t>();
 		if (audio_stream) {
 			init_code = audio_stream->init((uint8_t*)&stream_ps1_info.extra_header, p_ps1_info.header.extra_header_length, p_downmix);
 		}
@@ -375,8 +353,7 @@ bool dvda_disc_t::create_audio_stream(sub_header_t& p_ps1_info, uint8_t* p_buf, 
 		return false;
 	}
 	if (init_code < 0) {
-		delete audio_stream;
-		audio_stream = nullptr;
+		audio_stream.reset();
 		return false;
 	}
 	auto info = audio_stream->get_info();
