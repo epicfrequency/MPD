@@ -1,6 +1,6 @@
 /*
 * DVD-Audio Decoder plugin
-* Copyright (c) 2009-2024 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
+* Copyright (c) 2009-2025 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
 *
 * DVD-Audio Decoder is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,6 @@ auto PTS_TO_SEC = [](auto pts) {
 };
 
 dvda_sector_pointer_t::dvda_sector_pointer_t(dvda_track_t& track, ats_track_sector_t& p_ats_track_sector, int sp_index) : dvda_track(track) {
-	obj_type = DVDATypeSectorPointer;
 	index = sp_index;
 	first = p_ats_track_sector.first;
 	last  = p_ats_track_sector.last;
@@ -48,7 +47,6 @@ uint32_t dvda_sector_pointer_t::get_length_pts() {
 }
 
 dvda_track_t::dvda_track_t(ats_track_timestamp_t& ats_track_timestamp, int track_no) {
-	obj_type       = DVDATypeTrack;
 	track          = track_no;
 	index          = ats_track_timestamp.n;
 	first_pts      = ats_track_timestamp.first_pts;
@@ -56,10 +54,7 @@ dvda_track_t::dvda_track_t(ats_track_timestamp_t& ats_track_timestamp, int track
 	downmix_matrix = ats_track_timestamp.downmix_matrix < DOWNMIX_MATRICES ? ats_track_timestamp.downmix_matrix : -1;
 }
 
-dvda_track_t::~dvda_track_t() {
-}
-
-double dvda_track_t::get_time() {
+double dvda_track_t::get_time() const {
 	return PTS_TO_SEC(length_pts);
 }
 
@@ -80,17 +75,13 @@ uint32_t dvda_track_t::get_last() {
 };
 
 dvda_title_t::dvda_title_t(ats_title_t* p_ats_title, ats_title_idx_t* p_ats_title_idx) {
-	obj_type = DVDATypeTitle;
 	title    = p_ats_title_idx->title_nr;
 	indexes  = p_ats_title->indexes;
 	tracks   = p_ats_title->tracks;
 	length_pts = p_ats_title->len_in_pts;
 }
 
-dvda_title_t::~dvda_title_t() {
-}
-
-double dvda_title_t::get_time() {
+double dvda_title_t::get_time() const {
 	return PTS_TO_SEC(length_pts);
 }
 
@@ -125,9 +116,8 @@ double dvda_downmix_matrix_t::get_downmix_coef(int channel, int dmx_channel) {
 }
 
 bool dvda_titleset_t::open(size_t titleset) {
-	obj_type = DVDATypeTitleset;
 	dvda_titleset = titleset;
-	dvda_titleset_type = DVDTitlesetUnknown;
+	dvda_titleset_type = dvda_titleset_e::DVDTitlesetUnknown;
 	char file_name[13];
 	snprintf(file_name, sizeof(file_name), "ATS_%02d_0.IFO", (int)dvda_titleset);
 	auto atsi_file = dvda_zone.get_filesystem().open(file_name);
@@ -184,10 +174,10 @@ bool dvda_titleset_t::open(size_t titleset) {
 					}
 				}
 				if (atsi_mat.atsm_vobs == 0) {
-					dvda_titleset_type = DVDTitlesetAudio;
+					dvda_titleset_type = dvda_titleset_e::DVDTitlesetAudio;
 				}
 				else {
-					dvda_titleset_type = DVDTitlesetVideo;
+					dvda_titleset_type = dvda_titleset_e::DVDTitlesetVideo;
 				}
 				aobs_last_sector = atsi_mat.ats_last_sector - 2 * (atsi_mat.atsi_last_sector + 1);
 				uint32_t ats_len = (uint32_t)atsi_size - 0x0800;
@@ -290,16 +280,14 @@ size_t dvda_titleset_t::get_blocks(uint32_t block_first, uint32_t block_last, ui
 	if (aob_index >= 0) {
 		if (aobs[aob_index].dvda_fileobject) {
 			if (aobs[aob_index].dvda_fileobject->seek((block_first - aobs[aob_index].block_first) * DVD_BLOCK_SIZE)) {
-				int bytes_to_read;
-				int bytes_read;
 				if (block_last <= aobs[aob_index].block_last) {
-					bytes_to_read = (block_last + 1 - block_first) * DVD_BLOCK_SIZE;
-					bytes_read = (int)aobs[aob_index].dvda_fileobject->read((char*)buf_ptr, bytes_to_read);
+					int bytes_to_read = (block_last + 1 - block_first) * DVD_BLOCK_SIZE;
+					int bytes_read = (int)aobs[aob_index].dvda_fileobject->read((char*)buf_ptr, bytes_to_read);
 					blocks_read += bytes_read / DVD_BLOCK_SIZE;
 				}
 				else {
-					bytes_to_read = (aobs[aob_index].block_last + 1 - block_first) * DVD_BLOCK_SIZE;
-					bytes_read = (int)aobs[aob_index].dvda_fileobject->read((char*)buf_ptr, bytes_to_read);
+					int bytes_to_read = (aobs[aob_index].block_last + 1 - block_first) * DVD_BLOCK_SIZE;
+					int bytes_read = (int)aobs[aob_index].dvda_fileobject->read((char*)buf_ptr, bytes_to_read);
 					blocks_read += bytes_read / DVD_BLOCK_SIZE;
 					if (aob_index + 1 < 9) {
 						if (aobs[aob_index + 1].dvda_fileobject) {
@@ -326,7 +314,6 @@ void dvda_titleset_t::close_aobs() {
 bool dvda_zone_t::open() {
 	close();
 	auto is_open{ false };
-	obj_type = DVDATypeZone;
 	audio_titlesets = 99;
 	video_titlesets = 99;
 	auto amgi_file = dvda_filesystem.open("AUDIO_TS.IFO");

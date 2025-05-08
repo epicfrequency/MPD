@@ -1,6 +1,6 @@
 /*
 * DVD-Audio Decoder plugin
-* Copyright (c) 2009-2024 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
+* Copyright (c) 2009-2025 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
 *
 * DVD-Audio Decoder is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -27,8 +27,7 @@
 #include <array>
 #include <vector>
 
-enum dvda_object_type_e {DVDATypeObject, DVDATypeAOB, DVDATypeSectorPointer, DVDATypeTrack, DVDATypeTitle, DVDATypeTitleset, DVDATypeZone};
-enum dvda_titleset_type_e {DVDTitlesetUnknown, DVDTitlesetAudio, DVDTitlesetVideo};
+enum class dvda_titleset_e{ DVDTitlesetUnknown, DVDTitlesetAudio, DVDTitlesetVideo };
 
 class dvda_sector_pointer_t;
 class dvda_track_t;
@@ -37,26 +36,14 @@ class dvda_titleset_t;
 class dvda_zone_t;
 
 class dvda_object_t {
-public:
-	dvda_object_type_e obj_type;
-	dvda_object_t() {
-		obj_type = DVDATypeObject;
-	}
-	~dvda_object_t() {}
-	int get_type() {
-		return obj_type;
-	}
 };
 
 class aob_object_t : public dvda_object_t {
 public:
-	aob_object_t() {
-		obj_type = DVDATypeAOB;
-	}
-	double get_time() { return 0.0; }
-	uint32_t get_length_pts() { return 0; }
-	uint32_t get_first() { return 0; }
-	uint32_t get_last() { return 0; }
+	double get_time() const { return 0.0; }
+	uint32_t get_length_pts() const { return 0; }
+	uint32_t get_first() const { return 0; }
+	uint32_t get_last() const { return 0; }
 };
 
 class dvda_sector_pointer_t : public aob_object_t {
@@ -68,13 +55,13 @@ public:
 	dvda_sector_pointer_t(dvda_track_t& p_dvda_track, ats_track_sector_t& p_ats_track_sector, int sp_index);
 	double get_time();
 	uint32_t get_length_pts();
-	uint32_t get_index() {
+	uint32_t get_index() const {
 		return index; 
 	}
-	uint32_t get_first() {
+	uint32_t get_first() const {
 		return first; 
 	}
-	uint32_t get_last() {
+	uint32_t get_last() const {
 		return last; 
 	}
 };
@@ -88,49 +75,47 @@ class dvda_track_t : public aob_object_t {
 	int downmix_matrix;
 public:
 	dvda_track_t(ats_track_timestamp_t& p_ats_track_timestamp, int p_track_no);
-	virtual ~dvda_track_t();
 	std::vector<dvda_sector_pointer_t>& get_sector_pointers() {
 		return dvda_sector_pointers;
 	}
 	dvda_sector_pointer_t& get_sector_pointer(size_t p_index) {
 		return dvda_sector_pointers[p_index];
 	}
-	uint32_t get_index() {
+	uint32_t get_index() const {
 		return index; 
 	}
-	int get_track() {
+	int get_track() const {
 		return track; 
 	}
-	uint32_t get_length_pts() {
+	uint32_t get_length_pts() const {
 		return length_pts;
 	}
-	int get_downmix_matrix() {
+	int get_downmix_matrix() const {
 		return downmix_matrix;
 	}
-	double get_time();
+	double get_time() const;
 	uint32_t get_first();
 	uint32_t get_last();
 };
 
 class dvda_title_t : public dvda_object_t {
 	std::vector<dvda_track_t> dvda_tracks;
-	int title;
-	uint32_t length_pts;
-	int indexes;
-	int tracks;
+	int                       title;
+	uint32_t                  length_pts;
+	int                       indexes;
+	int                       tracks;
 public:
 	dvda_title_t(ats_title_t* p_ats_title, ats_title_idx_t* p_ats_title_idx);
-	virtual ~dvda_title_t();
 	std::vector<dvda_track_t>& get_tracks() {
 		return dvda_tracks;
 	}
 	dvda_track_t& get_track(size_t track) {
 		return dvda_tracks[track];
 	}
-	int get_title() {
+	int get_title() const {
 		return title; 
 	}
-	double get_time();
+	double get_time() const;
 };
 
 class dvda_aob_t {
@@ -164,7 +149,7 @@ class dvda_titleset_t : public dvda_object_t {
 	std::vector<dvda_title_t> dvda_titles;
 
 	bool                      is_open;
-	dvda_titleset_type_e      dvda_titleset_type;
+	dvda_titleset_e           dvda_titleset_type;
 	dvda_aob_t                aobs[9];
 	dvda_downmix_matrix_t     downmix_matrices[DOWNMIX_MATRICES];
 	uint32_t                  aobs_last_sector;
@@ -184,10 +169,10 @@ public:
 		return (int)dvda_titleset;
 	}
 	bool is_audio_ts() {
-		return dvda_titleset_type == DVDTitlesetAudio;
+		return dvda_titleset_type == dvda_titleset_e::DVDTitlesetAudio;
 	}
 	bool is_video_ts() {
-		return dvda_titleset_type == DVDTitlesetVideo;
+		return dvda_titleset_type == dvda_titleset_e::DVDTitlesetVideo;
 	}
 	double get_downmix_coef(int matrix, int channel, int dmx_channel) {
 		if (matrix >= 0 && matrix < DOWNMIX_MATRICES)
