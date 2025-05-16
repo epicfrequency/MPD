@@ -1,6 +1,6 @@
 /*
 * MPD SACD Decoder plugin
-* Copyright (c) 2011-2021 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
+* Copyright (c) 2011-2025 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
 *
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -17,8 +17,7 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
 
-#ifndef _SACD_DSDIFF_H_INCLUDED
-#define _SACD_DSDIFF_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <vector>
@@ -63,39 +62,40 @@ public:
 	double start_time;
 	double stop_time1; // not edited master mode
 	double stop_time2; // for edited master mode
+	track_t() : start_time(0), stop_time1(0), stop_time2(0) {}
 };
 
 class id3tags_t {
 public:
 	uint32_t index;
 	uint64_t offset;
-        std::vector<uint8_t> tag_value;
+	std::vector<uint8_t> tag_value;
 };
 
 class sacd_dsdiff_t : public sacd_reader_t {
-        sacd_media_t*          sacd_media;
-        open_mode_e            mode;
-        area_id_e              track_area;
-        uint32_t               version;
-        uint32_t               samplerate;
-        uint16_t               channel_count;
-        uint16_t               loudspeaker_config;
-        bool                   is_emaster;
-        bool                   is_dst_encoded;
-        uint64_t               frm8_size;
-        uint64_t               dsti_offset;
-        uint64_t               dsti_size;
-        uint64_t               data_offset;
-        uint64_t               data_size;
-        uint16_t               framerate;
-        uint32_t               dsd_frame_size;
-        uint32_t               frame_count;
-        std::vector<track_t>   track_index;
-        uint64_t               id3_offset;
-        std::vector<id3tags_t> id3tags;
-        uint32_t               current_track;
-        uint64_t               current_offset;
-        uint64_t               current_size;
+	sacd_media_t*          sacd_media;
+	open_mode_e            mode;
+	area_id_e              track_area;
+	uint32_t               version;
+	uint32_t               samplerate;
+	uint16_t               channel_count;
+	uint16_t               loudspeaker_config;
+	bool                   is_emaster;
+	bool                   is_dst_encoded;
+	uint64_t               frm8_size;
+	uint64_t               dsti_offset;
+	uint64_t               dsti_size;
+	uint64_t               data_offset;
+	uint64_t               data_size;
+	uint16_t               framerate;
+	uint32_t               dsd_frame_size;
+	uint32_t               frame_count;
+	std::vector<track_t>   track_index;
+	uint64_t               id3_offset;
+	std::vector<id3tags_t> id3tags;
+	uint32_t               current_track;
+	uint64_t               current_offset;
+	uint64_t               current_size;
 public:
 	sacd_dsdiff_t();
 	virtual ~sacd_dsdiff_t();
@@ -123,5 +123,3 @@ private:
 	void get_id3tags(uint32_t track_index, TagHandler& handler);
 	void index_id3tags();
 };
-
-#endif

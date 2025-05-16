@@ -13,8 +13,7 @@
 
 using std::min;
 
-namespace dst
-{
+namespace dst {
 
 class stream_t {
 	const uint8_t* m_data;
@@ -29,7 +28,7 @@ public:
 
 	void set_data(const uint8_t* data, size_t size) {
 		m_data = data;
-		m_size = size;
+		m_size = (unsigned int)size;
 		m_offset = 0;
 	}
 

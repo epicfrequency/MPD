@@ -15,8 +15,7 @@
 using std::array;
 using std::vector;
 
-namespace dst
-{
+namespace dst {
 
 class fh_t {
 public:

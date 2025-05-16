@@ -6,8 +6,7 @@
 #include <memory.h>
 #include "decoder.h"
 
-namespace dst
-{
+namespace dst {
 
 static unsigned int int_abs(int n) {
 	int mask = n >> (8 * sizeof(int) - 1);
@@ -61,7 +60,7 @@ int decoder_t::close() {
 }
 
 // Decode a complete frame (all channels)
-int decoder_t::decode(const uint8_t* dst_data, unsigned int dst_bits, uint8_t* dsd_data) {
+int decoder_t::run(const uint8_t* dst_data, unsigned int dst_bits, uint8_t* dsd_data) {
 	int     rv = 0;
 	uint8_t ACError;
 
@@ -267,8 +266,38 @@ void decoder_t::LT_InitStatus(vector<array<uint8_t, 16>>& Status) {
 	}
 }
 
+#if defined(USE_NEON)
+
+#include <arm_neon.h>
+
 int16_t decoder_t::LT_RunFilter(array<array<int16_t, 256>, 16>& FilterTable, array<uint8_t, 16>& ChannelStatus) {
-	int Predict;
+	const int16_t v0[8]{
+		FilterTable[0][ChannelStatus[0]],
+		FilterTable[1][ChannelStatus[1]],
+		FilterTable[2][ChannelStatus[2]],
+		FilterTable[3][ChannelStatus[3]],
+		FilterTable[4][ChannelStatus[4]],
+		FilterTable[5][ChannelStatus[5]],
+		FilterTable[6][ChannelStatus[6]],
+		FilterTable[7][ChannelStatus[7]]
+	};
+	const int16_t v1[8]{
+		FilterTable[8][ChannelStatus[8]],
+		FilterTable[9][ChannelStatus[9]],
+		FilterTable[10][ChannelStatus[10]],
+		FilterTable[11][ChannelStatus[11]],
+		FilterTable[12][ChannelStatus[12]],
+		FilterTable[13][ChannelStatus[13]],
+		FilterTable[14][ChannelStatus[14]],
+		FilterTable[15][ChannelStatus[15]]
+	};
+	return vaddvq_s16(vaddq_s16(vld1q_s16(v0), vld1q_s16(v1)));
+}
+
+#else
+
+int16_t decoder_t::LT_RunFilter(array<array<int16_t, 256>, 16>& FilterTable, array<uint8_t, 16>& ChannelStatus) {
+	int16_t Predict;
 	Predict = FilterTable[0][ChannelStatus[0]];
 	Predict += FilterTable[1][ChannelStatus[1]];
 	Predict += FilterTable[2][ChannelStatus[2]];
@@ -285,7 +314,9 @@ int16_t decoder_t::LT_RunFilter(array<array<int16_t, 256>, 16>& FilterTable, arr
 	Predict += FilterTable[13][ChannelStatus[13]];
 	Predict += FilterTable[14][ChannelStatus[14]];
 	Predict += FilterTable[15][ChannelStatus[15]];
-	return (int16_t)Predict;
+	return Predict;
 }
+
+#endif
 
 }
