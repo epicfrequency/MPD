@@ -14,8 +14,7 @@
 using std::array;
 using std::vector;
 
-namespace dst
-{
+namespace dst {
 
 enum class ct_e { Filter, Ptable };
 

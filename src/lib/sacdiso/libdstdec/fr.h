@@ -12,8 +12,7 @@
 #include "ct.h"
 #include "stream.h"
 
-namespace dst
-{
+namespace dst {
 
 class fr_t : public stream_t, public fh_t {
 public:

@@ -358,7 +358,7 @@ bool dvda_zone_t::open() {
 						for (auto track_index = 0u; track_index < dvda_title.get_tracks().size(); track_index++) {
 							auto dvda_track = dvda_title.get_track(track_index);
 							for (auto sector_pointer_index = 0u; sector_pointer_index < dvda_track.get_sector_pointers().size(); sector_pointer_index++) {
-								auto dvda_sector_pointer = dvda_track.get_sector_pointer(sector_pointer_index);
+								[[maybe_unused]] auto dvda_sector_pointer = dvda_track.get_sector_pointer(sector_pointer_index);
 							}
 						}
 					}

@@ -21,28 +21,36 @@
 #include "decoder.h"
 #include "dst_engine.h"
 
-typedef dst_engine_t<dst::decoder_t, model_e::MT> ctx_t;
-
-static auto ctx_cast = [](auto ctx) {
-	return static_cast<ctx_t*>(ctx);
+class dst_decoder_t::ctx_t : public dst_engine_t<dst::decoder_t, model_e::MT> {
 };
 
-dst_decoder_t::dst_decoder_t(size_t num_threads) {
-	ctx = static_cast<void*>(new ctx_t(num_threads));
+dst_decoder_t::dst_decoder_t() : ctx(nullptr) {
 }
 
 dst_decoder_t::~dst_decoder_t() {
-	delete ctx_cast(ctx);
-}
-
-bool dst_decoder_t::is_init() {
-	return ctx && ctx_cast(ctx)->is_init();
+	delete ctx;
 }
 
 int dst_decoder_t::init(unsigned int channels, unsigned int channel_frame_size) {
-	return ctx_cast(ctx)->init(channels, channel_frame_size);
+	if (!ctx) {
+		ctx = new ctx_t();
+	}
+	if (!ctx) {
+		return -1;
+	}
+	return ctx->init(channels, channel_frame_size);
 }
 
-size_t dst_decoder_t::run(std::vector<unsigned char>& dsx_data) {
-	return ctx_cast(ctx)->run(dsx_data);
+int dst_decoder_t::run(std::vector<unsigned char>& dsx_data) {
+	if (!ctx) {
+		return 0;
+	}
+	return ctx->run(dsx_data);
+}
+
+void dst_decoder_t::flush() {
+	if (!ctx) {
+		return;
+	}
+	return ctx->flush();
 }

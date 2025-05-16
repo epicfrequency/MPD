@@ -138,7 +138,6 @@ scan_info(unsigned track, TagHandler& handler) {
 
 static bool
 init(const ConfigBlock& block) {
-	param_dstdec_threads = block.GetBlockValue("dstdec_threads", 0);
 	param_edited_master  = block.GetBlockValue("edited_master", false);
 	param_single_track   = block.GetBlockValue("single_track", false);
 	param_lsbitfirst     = block.GetBlockValue("lsbitfirst", false);
@@ -255,7 +254,8 @@ file_decode(DecoderClient &client, Path path_fs) {
 	client.Ready(audio_format, true, songtime);
 
 	// play
-	dst_decoder_t dst_decoder(param_dstdec_threads);
+	dst_decoder_t dst_decoder;
+	auto dst_decoder_initialized = false;
 	auto frame_read = true;
 	for (;;) {
 		dsx_buf.resize(dsd_samplerate / 8 / dsd_framerate * dsd_channels);
@@ -268,8 +268,11 @@ file_decode(DecoderClient &client, Path path_fs) {
 			case FRAME_DSD:
 				break;
 			case FRAME_DST:
-				if (!dst_decoder.is_init()) {
-					if (dst_decoder.init(dsd_channels, dsd_samplerate / 8 / dsd_framerate) != 0) {
+				if (!dst_decoder_initialized) {
+					if (dst_decoder.init(dsd_channels, dsd_samplerate / 8 / dsd_framerate) == 0) {
+						dst_decoder_initialized = true;
+					}
+					else {
 						LogError(dsdiff_domain, "dst_decoder_t.init() failed");
 					}
 				}
@@ -282,7 +285,7 @@ file_decode(DecoderClient &client, Path path_fs) {
 		else {
 			dsx_buf.resize(0);
 		}
-		if (dst_decoder.is_init()) {
+		if (dst_decoder_initialized) {
 			dst_decoder.run(dsx_buf);
 		}
 		if (dsx_buf.empty()) {

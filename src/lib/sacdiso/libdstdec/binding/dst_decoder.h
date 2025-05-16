@@ -19,15 +19,15 @@
 
 #pragma once
 
-#include <cstddef>
 #include <vector>
 
-class dst_decoder_t {
-	void* ctx{ nullptr };
+class dst_decoder_t final {
+	class ctx_t;
+	ctx_t* ctx;
 public:
-	dst_decoder_t(size_t num_threads = 0u);
+	dst_decoder_t();
 	~dst_decoder_t();
-	bool is_init();
 	int init(unsigned int channels, unsigned int channel_frame_size);
-	size_t run(std::vector<unsigned char>& dsx_data);
+	int run(std::vector<unsigned char>& dsx_data);
+	void flush();
 };

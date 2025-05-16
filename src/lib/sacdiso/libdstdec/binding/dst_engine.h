@@ -24,6 +24,8 @@
 #include <vector>
 #include <std_semaphore.h>
 
+using dsx_buffer_t = std::vector<uint8_t>;
+
 constexpr auto LOG_ERROR   { "Error: " };
 constexpr auto LOG_WARNING { "Warning: " };
 constexpr auto LOG_INFO    { "Info: " };
@@ -31,7 +33,7 @@ constexpr auto LOG_INFO    { "Info: " };
 template<typename T>
 static void LOG(T p1, T p2) {
 	log_printf(T("%s%s"), p1, p2);
-}
+};
 
 enum class model_e { MT = 1, MPP = 2 };
 enum class slot_state_t { SLOT_EMPTY, SLOT_LOADED, SLOT_RUNNING, SLOT_READY, SLOT_READY_WITH_ERROR, SLOT_TERMINATING };
@@ -44,25 +46,27 @@ public:
 	semaphore_t out_semaphore;
 	codec_t     codec;
 
-	slot_state_t         state;
-	std::vector<uint8_t> inp_data;
-	std::vector<uint8_t> out_data;
+	slot_state_t state;
+	dsx_buffer_t inp_data;
+	dsx_buffer_t out_data;
 
 	dst_slot_t() : inp_semaphore(0), out_semaphore(0) {
 		state = slot_state_t::SLOT_EMPTY;
 	}
-	dst_slot_t(const dst_slot_t& slot) : inp_semaphore(0), out_semaphore(0) {
+	dst_slot_t(const dst_slot_t& slot) = delete;
+	dst_slot_t& operator=(const dst_slot_t& slot) = delete;
+	dst_slot_t(dst_slot_t&& slot) : inp_semaphore(0), out_semaphore(0) {
 		state = slot.state;
-		inp_data = slot.inp_data;
-		out_data = slot.out_data;
-		codec = slot.codec;
+		inp_data = std::move(slot.inp_data);
+		out_data = std::move(slot.out_data);
 	}
+	dst_slot_t& operator=(dst_slot_t&& slot) = delete;
 	void run(bool& running) {
 		while (running) {
 			inp_semaphore.acquire();
 			if (running && !inp_data.empty()) {
 				state = slot_state_t::SLOT_RUNNING;
-				auto error = codec.decode(inp_data.data(), (unsigned int)(8 * inp_data.size()), out_data.data());
+				auto error = codec.run(inp_data.data(), (unsigned int)(8 * inp_data.size()), out_data.data());
 				state = (error == 0) ? slot_state_t::SLOT_READY : slot_state_t::SLOT_READY_WITH_ERROR;
 			}
 			else {
@@ -79,13 +83,11 @@ class dst_engine_t {
 
 	size_t slot_index;
 	size_t out_size;
-	bool   is_initialized;
 	bool   run_threads;
 public:
 	dst_engine_t(size_t num_threads = 0u) {
 		slot_index = 0;
 		out_size = 0;
-		is_initialized = false;
 		run_threads = true;
 		slots.resize(num_threads ? num_threads : std::thread::hardware_concurrency());
 		for (auto&& slot : slots) {
@@ -97,6 +99,7 @@ public:
 			slot.thread = std::move(t);
 		}
 	}
+	
 	~dst_engine_t() {
 		run_threads = false;
 		for (auto&& slot : slots) {
@@ -106,32 +109,21 @@ public:
 			slot.codec.close();
 		}
 	}
-	bool is_init() {
-		return is_initialized;
-	}
-	size_t get_slot_index() {
-		return slot_index;
-	}
+	
 	template<typename T1, typename T2, typename... Args>
-	int init(T1 channels, T2 frame_size, Args&&... args) {
-		int rv{ 0 };
-		out_size = channels * (unsigned int)frame_size;
+	auto init(T1 channels, T2 frame_size, Args&&... args) {
+		auto rv{ 0 };
+		out_size = static_cast<decltype(out_size)>(channels) * static_cast<decltype(out_size)>(frame_size);
 		for (auto&& slot : slots) {
 			rv = slot.codec.init(channels, frame_size, std::forward<Args>(args)...);
 			if (rv) {
 				return rv;
 			}
 		}
-		is_initialized = true;
 		return rv;
 	}
-	size_t run(std::vector<uint8_t>& dsx_data) {
-
-		// Check if decoder is initialized
-		if (!is_initialized) {
-			dsx_data.clear();
-			return 0;
-		}
+	
+	int run(dsx_buffer_t& dsx_data) {
 
 		// Get current slot
 		auto&& slot_set = slots[slot_index];
@@ -177,6 +169,15 @@ public:
 			dsx_data.clear();
 			break;
 		}
-		return dsx_data.size();
+		return (int)dsx_data.size();
 	}
+
+	void flush() {
+		for (auto& slot : slots) {
+			(void)slot;
+			dsx_buffer_t dsx_temp;
+			run(dsx_temp);
+		}
+	}
+
 };
