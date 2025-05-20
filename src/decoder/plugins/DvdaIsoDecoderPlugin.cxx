@@ -320,16 +320,11 @@ static const char* const suffixes[] {
 	nullptr
 };
 
-static const char* const mime_types[] {
-	"application/x-iso",
-	nullptr
-};
-
 }
 
 constexpr DecoderPlugin dvdaiso_decoder_plugin =
 	DecoderPlugin("dvdaiso", dvdaiso::file_decode, dvdaiso::scan_file)
 	.WithInit(dvdaiso::init, dvdaiso::finish)
 	.WithContainer(dvdaiso::container_scan)
-	.WithSuffixes(dvdaiso::suffixes)
-	.WithMimeTypes(dvdaiso::mime_types);
+	.WithSuffixes(dvdaiso::suffixes);
+	

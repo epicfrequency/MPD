@@ -346,18 +346,10 @@ static const char* const suffixes[] {
 	nullptr
 };
 
-static const char* const mime_types[] {
-	"application/x-dff",
-	"audio/x-dff",
-	"audio/x-dsd",
-	nullptr
-};
-
 }
 
 constexpr DecoderPlugin dff_decoder_plugin =
 	DecoderPlugin("dsdiff", dsdiff::file_decode, dsdiff::scan_file)
 	.WithInit(dsdiff::init, dsdiff::finish)
 	.WithContainer(dsdiff::container_scan)
-	.WithSuffixes(dsdiff::suffixes)
-	.WithMimeTypes(dsdiff::mime_types);
+	.WithSuffixes(dsdiff::suffixes);

@@ -374,20 +374,10 @@ static const char* const suffixes[] {
 	nullptr
 };
 
-static const char* const mime_types[] {
-	"application/x-dat",
-	"application/x-iso",
-	"application/x-dff",
-	"audio/x-dsd",
-	"audio/x-dff",
-	nullptr
-};
-
 }
 
 constexpr DecoderPlugin sacdiso_decoder_plugin =
 	DecoderPlugin("sacdiso", sacdiso::file_decode, sacdiso::scan_file)
 	.WithInit(sacdiso::init, sacdiso::finish)
 	.WithContainer(sacdiso::container_scan)
-	.WithSuffixes(sacdiso::suffixes)
-	.WithMimeTypes(sacdiso::mime_types);
+	.WithSuffixes(sacdiso::suffixes);
