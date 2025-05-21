@@ -209,11 +209,12 @@ container_scan(Path path_fs) {
 				}
 				break;
 			}
+			char area;
+			char track_name[64];
 			if (add_track) {
 				AddTagHandler h(tag_builder);
-				auto area = dvda_reader->get_channels() > 2 ? 'M' : 'S';
+				area = dvda_reader->get_channels() > 2 ? 'M' : 'S';
 				scan_info(track_index, false, h);
-				char track_name[64];
 				std::sprintf(track_name, DVDA_TRACKXXX_FMT, track_index + 1, area, suffix),
 				tail = list.emplace_after(
 					tail,
@@ -223,10 +224,9 @@ container_scan(Path path_fs) {
 			}
 			if (add_downmix) {
 				AddTagHandler h(tag_builder);
-				auto area = 'D';
+				area = 'D';
 				scan_info(track_index, true, h);
-				char track_name[64];
-				std::printf(track_name, DVDA_TRACKXXX_FMT, track_index + 1, area, suffix),
+				std::sprintf(track_name, DVDA_TRACKXXX_FMT, track_index + 1, area, suffix),
 				tail = list.emplace_after(
 					tail,
 					track_name,
