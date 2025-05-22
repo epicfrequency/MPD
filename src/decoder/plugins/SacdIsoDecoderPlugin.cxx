@@ -157,11 +157,38 @@ scan_info(unsigned track, unsigned track_index, TagHandler& handler) {
 	handler.OnDuration(SongTime::FromS(sacd_reader->get_duration(track)));
 	if (sacd_metabase) {
 		sacd_metabase->get_track_info(track_index + 1, handler);
-		if (handler.WantPicture()) {
-			sacd_metabase->get_albumart(handler);
-		}
 	}
 	sacd_reader->get_info(track, handler);
+	if (handler.WantPicture()) {
+		auto has_albumart{ false };
+		if (sacd_metabase) {
+			has_albumart = sacd_metabase->get_albumart(handler);
+		}
+		if (!has_albumart) {
+			static constexpr auto art_names = std::array {
+				"cover.png",
+				"cover.jpg",
+				"cover.webp",
+			};
+			for (const auto art_name : art_names) {
+				auto art_file = AllocatedPath::Build(sacd_path.GetDirectoryName(), art_name);
+				try {
+					Mutex mutex;
+					auto is = InputStream::OpenReady(art_file.c_str(), mutex);
+					if (is && is->KnownSize()) {
+						std::unique_lock lock{mutex};
+						std::vector<std::byte> art_data;
+						art_data.resize(is->GetSize());
+						is->ReadFull(lock, art_data);
+						handler.OnPicture(nullptr, art_data);
+						break;
+					}
+				}
+				catch (...) {
+				}
+			}
+		}
+	}
 }
 
 static bool

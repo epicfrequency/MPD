@@ -137,8 +137,33 @@ scan_info(unsigned track_index, bool downmix, TagHandler& handler) {
 		dvda_reader->get_info(track_index, downmix, handler);
 	}
 	if (handler.WantPicture()) {
+		auto has_albumart{ false };
 		if (dvda_metabase) {
-			dvda_metabase->get_albumart(handler);
+			has_albumart = dvda_metabase->get_albumart(handler);
+		}
+		if (!has_albumart) {
+			static constexpr auto art_names = std::array {
+				"cover.png",
+				"cover.jpg",
+				"cover.webp",
+			};
+			for (const auto art_name : art_names) {
+				auto art_file = AllocatedPath::Build(dvda_path.GetDirectoryName(), art_name);
+				try {
+					Mutex mutex;
+					auto is = InputStream::OpenReady(art_file.c_str(), mutex);
+					if (is && is->KnownSize()) {
+						std::unique_lock lock{mutex};
+						std::vector<std::byte> art_data;
+						art_data.resize(is->GetSize());
+						is->ReadFull(lock, art_data);
+						handler.OnPicture(nullptr, art_data);
+						break;
+					}
+				}
+				catch (...) {
+				}
+			}
 		}
 	}
 }
