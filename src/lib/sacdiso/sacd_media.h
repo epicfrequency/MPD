@@ -1,6 +1,6 @@
 /*
 * MPD SACD Decoder plugin
-* Copyright (c) 2014-2023 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
+* Copyright (c) 2014-2025 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
 *
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -17,8 +17,7 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
 
-#ifndef _SACD_MEDIA_H_INCLUDED
-#define _SACD_MEDIA_H_INCLUDED
+#pragma once
 
 #include "config.h"
 #include <stdint.h>
@@ -67,5 +66,3 @@ public:
 	size_t  read(void* data, size_t size) override;
 	int64_t skip(int64_t bytes) override;
 };
-
-#endif

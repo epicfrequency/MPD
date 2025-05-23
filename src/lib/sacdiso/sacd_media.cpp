@@ -1,6 +1,6 @@
 /*
 * MPD SACD Decoder plugin
-* Copyright (c) 2014 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
+* Copyright (c) 2014-2025 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
 *
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -100,6 +100,9 @@ sacd_media_stream_t::~sacd_media_stream_t() {
 	sacd_media_stream_t::close();
 }
 
+#include "util/Domain.hxx"
+static constexpr Domain logger_domain("logger");
+
 bool sacd_media_stream_t::open(const char* path) {
 	try {
 		is = InputStream::OpenReady(path, mutex);
@@ -136,13 +139,14 @@ int64_t sacd_media_stream_t::get_size() {
 }
 
 size_t sacd_media_stream_t::read(void* data, size_t size) {
-	size_t read_bytes;
+	size_t read_bytes{ 0 };
 	try {
-        read_bytes = is->LockRead({static_cast<std::byte*>(data), size});
+		while (!is->LockIsEOF() && (read_bytes < size)) {
+			read_bytes += is->LockRead({static_cast<std::byte*>(data) + read_bytes, size - read_bytes});
+		}
 	}
 	catch (...) {
 		LogError(std::current_exception());
-		return 0;
 	}
 	return read_bytes;
 }

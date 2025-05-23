@@ -1,6 +1,6 @@
 /*
 * MPD DVD-Audio Decoder plugin
-* Copyright (c) 2014 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
+* Copyright (c) 2014-2025 Maxim V.Anisiutkin <maxim.anisiutkin@gmail.com>
 *
 * DVD-Audio Decoder is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -147,13 +147,14 @@ bool dvda_media_stream_t::seek(int64_t position) {
 }
 
 size_t dvda_media_stream_t::read(void* data, size_t size) {
-	size_t read_bytes;
+	size_t read_bytes{ 0 };
 	try {
-        read_bytes = is->LockRead({static_cast<std::byte*>(data), size});
+		while (!is->LockIsEOF() && (read_bytes < size)) {
+			read_bytes += is->LockRead({static_cast<std::byte*>(data) + read_bytes, size - read_bytes});
+		}
 	}
 	catch (...) {
 		LogError(std::current_exception());
-		return 0;
 	}
 	return read_bytes;
 }
