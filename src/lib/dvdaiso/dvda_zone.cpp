@@ -64,7 +64,7 @@ uint32_t dvda_track_t::get_first() {
 		sector = std::min(sector, get_sector_pointer(i).get_first());
 	}
 	return sector; 
-};
+}
 
 uint32_t dvda_track_t::get_last() {
 	auto sector = (get_sector_pointers().size() > 0) ? get_sector_pointer(0).get_last() : 0u;
@@ -72,7 +72,7 @@ uint32_t dvda_track_t::get_last() {
 		sector = std::max(sector, get_sector_pointer(i).get_last());
 	}
 	return sector; 
-};
+}
 
 dvda_title_t::dvda_title_t(ats_title_t* p_ats_title, ats_title_idx_t* p_ats_title_idx) {
 	title    = p_ats_title_idx->title_nr;

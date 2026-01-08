@@ -189,7 +189,7 @@ bool sacd_metabase_t::get_albumart(TagHandler& handler) {
 	auto debase64_size = CalculateBase64OutputSize(strlen(cdata_value));
 	std::vector<std::byte> debase64_data(debase64_size);
 	debase64_size =	DecodeBase64(debase64_data, cdata_value);
-	handler.OnPicture(nullptr, debase64_data);
+	handler.OnPicture({}, debase64_data);
 	return true;
 }
 

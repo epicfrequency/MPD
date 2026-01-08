@@ -157,7 +157,7 @@ scan_info(unsigned track_index, bool downmix, TagHandler& handler) {
 						std::vector<std::byte> art_data;
 						art_data.resize(is->GetSize());
 						is->ReadFull(lock, art_data);
-						handler.OnPicture(nullptr, art_data);
+						handler.OnPicture({}, art_data);
 						break;
 					}
 				}

@@ -25,6 +25,7 @@
 #include "plugins/WavpackDecoderPlugin.hxx"
 #include "plugins/FfmpegDecoderPlugin.hxx"
 #include "plugins/GmeDecoderPlugin.hxx"
+#include "plugins/VgmstreamDecoderPlugin.hxx"
 #include "plugins/FaadDecoderPlugin.hxx"
 #include "plugins/MadDecoderPlugin.hxx"
 #include "plugins/SndfileDecoderPlugin.hxx"
@@ -96,6 +97,9 @@ constinit const struct DecoderPlugin *const decoder_plugins[] = {
 #endif
 #ifdef ENABLE_GME
 	&gme_decoder_plugin,
+#endif
+#ifdef ENABLE_VGMSTREAM
+	&vgmstream_decoder_plugin,
 #endif
 #ifdef ENABLE_FFMPEG
 	&ffmpeg_decoder_plugin,

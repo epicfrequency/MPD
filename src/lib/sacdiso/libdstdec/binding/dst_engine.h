@@ -33,7 +33,7 @@ constexpr auto LOG_INFO    { "Info: " };
 template<typename T>
 static void LOG(T p1, T p2) {
 	log_printf(T("%s%s"), p1, p2);
-};
+}
 
 enum class model_e { MT = 1, MPP = 2 };
 enum class slot_state_t { SLOT_EMPTY, SLOT_LOADED, SLOT_RUNNING, SLOT_READY, SLOT_READY_WITH_ERROR, SLOT_TERMINATING };

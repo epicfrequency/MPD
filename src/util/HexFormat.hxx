@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 // Copyright CM4all GmbH
-// author: Max Kellermann <mk@cm4all.com>
+// author: Max Kellermann <max.kellermann@ionos.com>
 
 #pragma once
 
@@ -75,6 +75,7 @@ HexFormat(char *output, std::span<const std::byte> input) noexcept
  * dump of the given fixed-size input.
  */
 template<std::size_t size>
+requires(size != std::dynamic_extent)
 constexpr auto
 HexFormat(std::span<const std::byte, size> input) noexcept
 {
@@ -84,6 +85,7 @@ HexFormat(std::span<const std::byte, size> input) noexcept
 }
 
 template<std::size_t size>
+requires(size != std::dynamic_extent)
 constexpr auto
 HexFormat(std::span<std::byte, size> input) noexcept
 {
