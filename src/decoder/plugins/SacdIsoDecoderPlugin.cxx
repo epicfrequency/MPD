@@ -23,8 +23,7 @@
 #include <sacd_disc.h>
 #include <sacd_metabase.h>
 #include <sacd_dsdiff.h>
-#include <dst_decoder.h>
-#include "SacdIsoDecoderPlugin.hxx"
+#include <dst_decoder.h>#include "SacdIsoDecoderPlugin.hxx"
 #include "../DecoderAPI.hxx"
 #include "input/InputStream.hxx"
 #include "pcm/CheckAudioFormat.hxx"
@@ -266,6 +265,24 @@ bit_reverse_buffer(uint8_t* p, uint8_t* end) {
 	}
 }
 
+//double DSD ZOH
+static std::vector<uint8_t> dsd_upsample_2x_zoh(const uint8_t* src, size_t size) {
+    std::vector<uint8_t> dest;
+    dest.reserve(size * 2);
+    for (size_t i = 0; i < size; ++i) {
+        uint8_t b = src[i];
+        uint16_t expanded = 0;
+        for (int bit = 7; bit >= 0; --bit) {
+            if ((b >> bit) & 1) {
+                expanded |= (0b11 << (bit * 2));
+            }
+        }
+        dest.push_back(uint8_t(expanded >> 8));
+        dest.push_back(uint8_t(expanded & 0xFF));
+    }
+    return dest;
+}
+
 static void
 file_decode(DecoderClient &client, Path path_fs) {
 	if (!container_update(path_fs.GetDirectoryName())) {
@@ -301,7 +318,9 @@ file_decode(DecoderClient &client, Path path_fs) {
 	std::vector<uint8_t> dsx_buf;
 
 	// initialize decoder
-	AudioFormat audio_format = CheckAudioFormat(dsd_samplerate / 8, SampleFormat::DSD, dsd_channels);
+	//AudioFormat audio_format = CheckAudioFormat(dsd_samplerate / 8, SampleFormat::DSD, dsd_channels);
+	// 将 dsd_samplerate 乘以 2，这样 MPD 会以 DSD128 的频率（5.6MHz）打开输出设备
+    AudioFormat audio_format = CheckAudioFormat((dsd_samplerate * 2) / 8, SampleFormat::DSD, dsd_channels);	
 	SongTime songtime = SongTime::FromS(sacd_reader->get_duration(track));
 	client.Ready(audio_format, true, songtime);
 
@@ -349,8 +368,18 @@ file_decode(DecoderClient &client, Path path_fs) {
 			if (param_lsbitfirst) {
 				bit_reverse_buffer(dsx_buf.data(), dsx_buf.data() + dsx_buf.size());
 			}
-			auto kbit_rate = dsd_channels * dsd_samplerate / 1000;
-			auto cmd = client.SubmitAudio(nullptr, std::span{ dsx_buf.data(), dsx_buf.size() }, kbit_rate);
+			//auto kbit_rate = dsd_channels * dsd_samplerate / 1000;
+			//auto cmd = client.SubmitAudio(nullptr, std::span{ dsx_buf.data(), dsx_buf.size() }, kbit_rate);
+			// 1. 调用我们之前添加的升频函数，将 DSD64 转换为 DSD128
+			auto upsampled_buf = dsd_upsample_2x_zoh(dsx_buf.data(), dsx_buf.size());
+
+			// 2. 更新比特率显示（因为采样率翻倍，比特率也要 * 2）
+			auto kbit_rate = dsd_channels * (dsd_samplerate * 2) / 1000;
+
+			// 3. 提交新生成的 upsampled_buf 数据，而不是原始的 dsx_buf
+			auto cmd = client.SubmitAudio(nullptr, std::span{ upsampled_buf.data(), upsampled_buf.size() }, kbit_rate);
+			
+			
 			if (cmd == DecoderCommand::SEEK) {
 				auto seconds = client.GetSeekTime().ToDoubleS();
 				if (sacd_reader->seek(seconds)) {
