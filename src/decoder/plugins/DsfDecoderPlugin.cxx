@@ -344,7 +344,8 @@ dsf_stream_decode(DecoderClient &client, InputStream &is)
 
 	/* Calculate song time from DSD chunk size and sample frequency */
 	const auto n_blocks = metadata.n_blocks;
-	auto songtime = SongTime::FromScale<uint64_t>(n_blocks * DSF_BLOCK_SIZE,
+	// double block size for double DSD
+	auto songtime = SongTime::FromScale<uint64_t>(n_blocks * DSF_BLOCK_SIZE * 2,
 						      audio_format.sample_rate);
 
 	/* success: file was recognized */
