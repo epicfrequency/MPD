@@ -23,7 +23,8 @@
 #include <sacd_disc.h>
 #include <sacd_metabase.h>
 #include <sacd_dsdiff.h>
-#include <dst_decoder.h>#include "SacdIsoDecoderPlugin.hxx"
+#include <dst_decoder.h>
+#include "SacdIsoDecoderPlugin.hxx"
 #include "../DecoderAPI.hxx"
 #include "input/InputStream.hxx"
 #include "pcm/CheckAudioFormat.hxx"
