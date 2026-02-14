@@ -173,6 +173,25 @@ bit_reverse_buffer(std::byte *p, std::byte *end)
 		*p = BitReverse(*p);
 }
 
+// Upsample DSD data by 2x using zero-order hold (ZOH). This is used for
+static std::vector<std::byte> dsd_upsample_2x_zoh(std::span<const std::byte> src) {
+    std::vector<std::byte> dest;
+    dest.reserve(src.size() * 2);
+    for (auto b_raw : src) {
+        uint8_t b = uint8_t(b_raw);
+        uint16_t expanded = 0;
+        for (int bit = 7; bit >= 0; --bit) {
+            if ((b >> bit) & 1) {
+                expanded |= (0b11 << (bit * 2));
+            }
+        }
+        dest.push_back(std::byte(expanded >> 8));
+        dest.push_back(std::byte(expanded & 0xFF));
+    }
+    return dest;
+}
+
+
 static void
 InterleaveDsfBlockMono(std::byte *gcc_restrict dest,
 		       const std::byte *gcc_restrict src)
@@ -281,9 +300,24 @@ dsf_decode_chunk(DecoderClient &client, InputStream &is,
 		std::byte interleaved_buffer[MAX_CHANNELS * DSF_BLOCK_SIZE];
 		InterleaveDsfBlock(interleaved_buffer, buffer, channels);
 
+		// cmd = client.SubmitAudio(is,
+		// 			 std::span{interleaved_buffer, block_size},
+		// 			 kbit_rate);
+			// --- 拦截并升频 ---
+		// 1. 生成翻倍后的数据
+		auto upsampled = dsd_upsample_2x_zoh(std::span{interleaved_buffer, block_size});
+		
+		// 2. 更新比特率显示
+		const unsigned kbit_rate_upsampled = channels * (sample_rate * 2) / 1000;
+
+		// 3. 提交上采样后的缓存
 		cmd = client.SubmitAudio(is,
-					 std::span{interleaved_buffer, block_size},
-					 kbit_rate);
+					std::span{upsampled.data(), upsampled.size()},
+					kbit_rate_upsampled);
+		// --- 结束拦截 ---
+		
+		
+		
 		++i;
 	}
 
@@ -298,9 +332,15 @@ dsf_stream_decode(DecoderClient &client, InputStream &is)
 	if (!dsf_read_metadata(&client, is, &metadata))
 		return;
 
-	auto audio_format = CheckAudioFormat(metadata.sample_rate / 8,
-					     SampleFormat::DSD,
-					     metadata.channels);
+	// auto audio_format = CheckAudioFormat(metadata.sample_rate / 8,
+	// 				     SampleFormat::DSD,
+	// 				     metadata.channels);
+
+	// double DSD
+	auto audio_format = CheckAudioFormat((metadata.sample_rate * 2) / 8,
+                     SampleFormat::DSD,
+                     metadata.channels);
+
 
 	/* Calculate song time from DSD chunk size and sample frequency */
 	const auto n_blocks = metadata.n_blocks;
