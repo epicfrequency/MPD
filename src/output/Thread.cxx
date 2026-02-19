@@ -34,8 +34,16 @@ AudioOutputControl::InternalOpen2(const AudioFormat in_audio_format)
 {
 	assert(in_audio_format.IsValid());
 
-	const auto cf = in_audio_format.WithMask(output->config_audio_format);
+	auto cf = in_audio_format.WithMask(output->config_audio_format);
+	
+	// modified for PCM/DSD: if the input sample rate is a multiple of 44100, use 352800 as the filter output sample rate; otherwise use 384000
+	cf.sample_rate = (in_audio_format.sample_rate % 44100u == 0)
+                 ? 352800u
+                 : 384000u;
 
+	cf.format = SampleFormat::FLOAT;   // 可选但强烈建议：保证 DSD 也先转 PCM 再走 SRC
+	///////
+	
 	if (open && cf != output->filter_audio_format)
 		/* if the filter's output format changes, the output
 		   must be reopened as well */

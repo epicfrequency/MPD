@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright The Music Player Daemon Project
 
 #include "PipeOutputPlugin.hxx"
@@ -41,11 +40,25 @@ PipeOutput::PipeOutput(const ConfigBlock &block)
 }
 
 inline void
-PipeOutput::Open([[maybe_unused]] AudioFormat &audio_format)
+PipeOutput::Open(AudioFormat &audio_format)
 {
-	fh = popen(cmd.c_str(), "w");
+	// audio_format is the final format MPD decided to feed into this pipe.
+	// We inject it into the child process environment so your wrapper can
+	// configure SDM pipeline parameters without watchers.
+
+	const unsigned rate = audio_format.sample_rate;
+	//const unsigned ch   = audio_format.channels;
+
+
+    // Pass rate in argv so it shows up in htop
+    std::string final_cmd = cmd + " --rate " + std::to_string(rate);
+
+    // Optional debug:
+    // fprintf(stderr, "pipe open: %s\n", final_cmd.c_str());
+
+	fh = popen(final_cmd.c_str(), "w");
 	if (fh == nullptr)
-		throw FmtErrno("Error opening pipe {:?}", cmd);
+		throw FmtErrno("Error opening pipe {:?}", final_cmd);
 }
 
 std::size_t
