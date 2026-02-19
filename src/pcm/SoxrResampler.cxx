@@ -188,15 +188,6 @@ AudioFormat
 SoxrPcmResampler::Open(AudioFormat &af, unsigned new_sample_rate)
 {
 	assert(af.IsValid());
-	// --- 注入你的强制系谱逻辑 ---
-    /*	if (af.sample_rate % 44100 == 0) {
-       		 new_sample_rate = 352800; // 44.1k 系 (含DSD) 强转 352.8k
-    	} else if (af.sample_rate % 48000 == 0) {
-        	new_sample_rate = 384000; // 48k 系强转 384k
-   	} else {
-        new_sample_rate = 384000; // 其余兜底
-    	}*/
-    // -------------------------	
 	assert(audio_valid_sample_rate(new_sample_rate));
 
 	soxr_error_t e;
