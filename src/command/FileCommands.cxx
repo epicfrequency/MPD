@@ -141,6 +141,10 @@ find_stream_art(std::string_view directory, Mutex &mutex)
 	static constexpr auto art_names = std::array {
 		"cover.png",
 		"cover.jpg",
+		"folder.jpg",
+		"folder.png",
+		"front.jpg",
+		"front.png",
 		"cover.webp",
 	};
 
